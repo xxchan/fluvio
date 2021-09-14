@@ -14,5 +14,7 @@ cfg_if::cfg_if! {
     }
 }
 
+const VERSION: &str = include_str!("../../../VERSION");
+
 use self::error::InternalServerError;
 pub use config::SpuOpt;

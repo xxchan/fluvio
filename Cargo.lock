@@ -1892,6 +1892,7 @@ dependencies = [
  "once_cell",
  "pin-utils",
  "regex",
+ "semver 1.0.4",
  "serde",
  "serde_yaml",
  "structopt",

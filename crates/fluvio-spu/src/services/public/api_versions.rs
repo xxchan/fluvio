@@ -4,7 +4,7 @@ use tracing::{debug, trace, instrument};
 use dataplane::api::{RequestMessage, ResponseMessage, Request};
 use dataplane::produce::DefaultProduceRequest;
 use dataplane::fetch::DefaultFetchRequest;
-use dataplane::versions::ApiVersionKey;
+use dataplane::versions::{ApiVersionKey, PlatformVersion};
 use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
 use fluvio_spu_schema::server::stream_fetch::DefaultStreamFetchRequest;
@@ -16,8 +16,12 @@ pub async fn handle_api_version_request(
     request: RequestMessage<ApiVersionsRequest>,
 ) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {
     debug!("Handling ApiVersionsRequest");
-
     let mut response = ApiVersionsResponse::default();
+
+    let platform_version = semver::Version::parse(&*crate::VERSION)
+        .expect("Platform Version (from VERSION file) must be semver");
+    response.platform_version = PlatformVersion::from(platform_version);
+
     response.api_keys.push(make_version_key(
         SpuServerApiKey::Produce,
         DefaultProduceRequest::MIN_API_VERSION,
