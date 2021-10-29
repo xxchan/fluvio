@@ -21,11 +21,11 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn, has_params: bool) -> To
 
     let function_call = if has_params {
         quote!(
-            super:: #user_fn(&record, &params)
+            super:: #user_fn(arg, &params)
         )
     } else {
         quote!(
-            super:: #user_fn(&record)
+            super:: #user_fn(arg)
         )
     };
 
@@ -42,6 +42,8 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn, has_params: bool) -> To
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
+                use fluvio_smartmodule::extractors::traits::FromRecord;
+                use fluvio_smartmodule::Error;
 
                 // DECODING
                 extern "C" {
@@ -69,6 +71,19 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn, has_params: bool) -> To
                 };
 
                 for mut record in records.into_iter() {
+                    let arg = match FromRecord::from_record(&record) {
+                        Ok(inner) => inner,
+                        Err(err) => {
+                            let error = SmartModuleRuntimeError::new(
+                                &record,
+                                smartmodule_input.base_offset,
+                                SmartModuleType::Filter,
+                                Error::from(err),
+                            );
+                            output.error = Some(error);
+                            continue;
+                        }
+                    };
 
                     let result = #function_call;
                     match result {

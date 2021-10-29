@@ -1749,6 +1749,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-extractors"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "fluvio-dataplane-protocol",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "fluvio-future"
 version = "0.3.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1945,6 +1956,7 @@ version = "0.2.0"
 dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",
+ "fluvio-extractors",
  "fluvio-smartmodule-derive",
  "fluvio-spu-schema",
  "trybuild 1.0.42 (git+https://github.com/sehz/trybuild?branch=check_option)",
