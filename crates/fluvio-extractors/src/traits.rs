@@ -1,14 +1,22 @@
 use std::error::Error as StdError;
 use fluvio_dataplane_protocol::record::Record;
 
-pub trait FromRecord: Sized {
+pub trait FromRecord<'a>: Sized {
     type Error: StdError + Send + Sync + 'static;
 
-    fn from_record(record: &Record) -> Result<Self, Self::Error>;
+    fn from_record(record: &'a Record) -> Result<Self, Self::Error>;
 }
 
 pub trait FromBytes: Sized {
     type Error: StdError + Send + Sync + 'static;
 
     fn from_bytes(bytes: &[u8]) -> Result<Self, Self::Error>;
+}
+
+impl<'a> FromRecord<'a> for &'a Record {
+    type Error = std::convert::Infallible;
+
+    fn from_record(record: &'a Record) -> Result<Self, Self::Error> {
+        Ok(record)
+    }
 }

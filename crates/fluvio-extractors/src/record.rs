@@ -15,7 +15,7 @@ pub enum RecordError<K, V> {
     Value(#[source] V),
 }
 
-impl<K: FromBytes, V: FromBytes> FromRecord for Record<K, V> {
+impl<K: FromBytes, V: FromBytes> FromRecord<'_> for Record<K, V> {
     type Error = RecordError<<K as FromBytes>::Error, <V as FromBytes>::Error>;
 
     fn from_record(record: &FluvioRecord) -> Result<Self, Self::Error> {
@@ -33,7 +33,7 @@ impl<K: FromBytes, V: FromBytes> FromRecord for Record<K, V> {
 #[derive(Debug)]
 pub struct Key<K: FromBytes>(pub Option<K>);
 
-impl<K: FromBytes> FromRecord for Key<K> {
+impl<K: FromBytes> FromRecord<'_> for Key<K> {
     type Error = <K as FromBytes>::Error;
 
     fn from_record(record: &FluvioRecord) -> Result<Self, Self::Error> {
@@ -49,7 +49,7 @@ impl<K: FromBytes> FromRecord for Key<K> {
 #[derive(Debug)]
 pub struct Value<V>(pub V);
 
-impl<V: FromBytes> FromRecord for Value<V> {
+impl<V: FromBytes> FromRecord<'_> for Value<V> {
     type Error = <V as FromBytes>::Error;
 
     fn from_record(record: &FluvioRecord) -> Result<Self, Self::Error> {
