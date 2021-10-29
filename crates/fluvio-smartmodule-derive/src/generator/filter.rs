@@ -42,7 +42,7 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn, has_params: bool) -> To
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
-                use fluvio_smartmodule::extractors::traits::FromRecord;
+                use fluvio_smartmodule::extractors::FromRecord;
                 use fluvio_smartmodule::Error;
 
                 // DECODING
@@ -77,7 +77,7 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn, has_params: bool) -> To
                             let error = SmartModuleRuntimeError::new(
                                 &record,
                                 smartmodule_input.base_offset,
-                                SmartModuleType::Filter,
+                                SmartModuleKind::Filter,
                                 Error::from(err),
                             );
                             output.error = Some(error);

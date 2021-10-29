@@ -45,8 +45,8 @@
 //! {"level":"error","message":"Unable to connect to database"}
 //! ```
 
-use fluvio_smartmodule::{smartstream, Result};
-use fluvio_smartmodule::extractors::record::Value;
+use fluvio_smartmodule::{smartmodule, Result};
+use fluvio_smartmodule::extractors::Value;
 use fluvio_smartmodule::extractors::serde::Json;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, serde::Deserialize)]

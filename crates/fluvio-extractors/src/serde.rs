@@ -1,13 +1,13 @@
-use serde::de::DeserializeOwned;
+use serde::{Serialize, Deserialize};
 use crate::traits::FromBytes;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Json<T>(pub T);
 
-impl<T: DeserializeOwned> FromBytes for Json<T> {
+impl<'a, T: Deserialize<'a>> FromBytes<'a> for Json<T> {
     type Error = serde_json::Error;
 
-    fn from_bytes(bytes: &[u8]) -> Result<Self, Self::Error> {
+    fn from_bytes(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         let inner: T = serde_json::from_slice(bytes)?;
         Ok(Self(inner))
     }

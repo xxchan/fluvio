@@ -2,7 +2,7 @@ use fluvio_dataplane_protocol::record::Record as FluvioRecord;
 use crate::traits::{FromBytes, FromRecord};
 
 #[derive(Debug)]
-pub struct Record<K: FromBytes, V: FromBytes> {
+pub struct Record<K, V> {
     pub key: Option<K>,
     pub value: V,
 }
@@ -15,10 +15,10 @@ pub enum RecordError<K, V> {
     Value(#[source] V),
 }
 
-impl<K: FromBytes, V: FromBytes> FromRecord<'_> for Record<K, V> {
-    type Error = RecordError<<K as FromBytes>::Error, <V as FromBytes>::Error>;
+impl<'a, K: FromBytes<'a>, V: FromBytes<'a>> FromRecord<'a> for Record<K, V> {
+    type Error = RecordError<<K as FromBytes<'a>>::Error, <V as FromBytes<'a>>::Error>;
 
-    fn from_record(record: &FluvioRecord) -> Result<Self, Self::Error> {
+    fn from_record(record: &'a FluvioRecord) -> Result<Self, Self::Error> {
         let key = record
             .key
             .as_ref()
@@ -31,12 +31,12 @@ impl<K: FromBytes, V: FromBytes> FromRecord<'_> for Record<K, V> {
 }
 
 #[derive(Debug)]
-pub struct Key<K: FromBytes>(pub Option<K>);
+pub struct Key<K>(pub Option<K>);
 
-impl<K: FromBytes> FromRecord<'_> for Key<K> {
-    type Error = <K as FromBytes>::Error;
+impl<'a, K: FromBytes<'a>> FromRecord<'a> for Key<K> {
+    type Error = <K as FromBytes<'a>>::Error;
 
-    fn from_record(record: &FluvioRecord) -> Result<Self, Self::Error> {
+    fn from_record(record: &'a FluvioRecord) -> Result<Self, Self::Error> {
         let key = record
             .key
             .as_ref()
@@ -49,11 +49,19 @@ impl<K: FromBytes> FromRecord<'_> for Key<K> {
 #[derive(Debug)]
 pub struct Value<V>(pub V);
 
-impl<V: FromBytes> FromRecord<'_> for Value<V> {
-    type Error = <V as FromBytes>::Error;
+impl<'a, V: FromBytes<'a>> FromRecord<'a> for Value<V> {
+    type Error = <V as FromBytes<'a>>::Error;
 
-    fn from_record(record: &FluvioRecord) -> Result<Self, Self::Error> {
+    fn from_record(record: &'a FluvioRecord) -> Result<Self, Self::Error> {
         let value = V::from_bytes(record.value.as_ref())?;
         Ok(Self(value))
+    }
+}
+
+impl<'a, V: FromBytes<'a>> FromBytes<'a> for Value<V> {
+    type Error = <V as FromBytes<'a>>::Error;
+
+    fn from_bytes(bytes: &'a [u8]) -> Result<Self, Self::Error> {
+        Ok(Self(V::from_bytes(bytes)?))
     }
 }

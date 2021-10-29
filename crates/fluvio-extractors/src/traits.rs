@@ -7,10 +7,10 @@ pub trait FromRecord<'a>: Sized {
     fn from_record(record: &'a Record) -> Result<Self, Self::Error>;
 }
 
-pub trait FromBytes: Sized {
+pub trait FromBytes<'a>: Sized {
     type Error: StdError + Send + Sync + 'static;
 
-    fn from_bytes(bytes: &[u8]) -> Result<Self, Self::Error>;
+    fn from_bytes(bytes: &'a [u8]) -> Result<Self, Self::Error>;
 }
 
 impl<'a> FromRecord<'a> for &'a Record {

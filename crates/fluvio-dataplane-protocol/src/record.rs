@@ -109,6 +109,10 @@ impl RecordData {
     pub fn as_str(&self) -> Result<&str, Utf8Error> {
         std::str::from_utf8(self.as_ref())
     }
+
+    pub fn inner(&self) -> Bytes {
+        self.0.clone()
+    }
 }
 
 impl<V: Into<Vec<u8>>> From<V> for RecordData {
