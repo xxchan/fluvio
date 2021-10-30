@@ -1,12 +1,8 @@
-use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
+use fluvio_smartmodule::{smartmodule, Result, RecordData};
+use fluvio_smartmodule::extractors::{Record, bytes::Slice, string::Parse};
 
 #[smartmodule(map)]
-pub fn map(record: &Record) -> Result<(Option<RecordData>, RecordData)> {
-    let key = record.key.clone();
-
-    let string = std::str::from_utf8(record.value.as_ref())?;
-    let int = string.parse::<i32>()?;
-    let value = (int * 2).to_string();
-
-    Ok((key, value.into()))
+pub fn map(record: Record<Slice, Parse<i32>>) -> Result<(Option<RecordData>, RecordData)> {
+    let value = (record.value.0 * 2).to_string();
+    Ok((record.key.map(|k| k.into()), value.into()))
 }
