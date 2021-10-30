@@ -31,6 +31,14 @@ impl<'a, K: FromBytes<'a>, V: FromBytes<'a>> FromRecord<'a> for Record<K, V> {
 }
 
 impl<'a, K: FromBytes<'a>, V: FromBytes<'a>> Record<K, V> {
+    pub fn parts(&self) -> (Option<&K::Inner>, &V::Inner) {
+        (self.key(), self.value())
+    }
+
+    pub fn into_parts(self) -> (Option<K::Inner>, V::Inner) {
+        (self.key.map(|k| k.into_inner()), self.value.into_inner())
+    }
+
     pub fn key(&self) -> Option<&K::Inner> {
         self.key.as_ref().map(|k| k.inner())
     }

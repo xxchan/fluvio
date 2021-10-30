@@ -1,5 +1,5 @@
 use fluvio_smartmodule::{smartmodule, Result, RecordData};
-use fluvio_smartmodule::extract::prelude::*;
+use fluvio_smartmodule::extract::*;
 
 #[smartmodule(map)]
 pub fn map(record: Record<Slice, Parse<i32>>) -> Result<(Option<RecordData>, RecordData)> {

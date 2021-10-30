@@ -46,8 +46,7 @@
 //! ```
 
 use fluvio_smartmodule::{smartmodule, Result};
-use fluvio_smartmodule::extract::Value;
-use fluvio_smartmodule::extract::serde::Json;
+use fluvio_smartmodule::extract::*;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]

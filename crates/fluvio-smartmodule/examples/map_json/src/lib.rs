@@ -1,6 +1,6 @@
 use serde_json::Value as JsonValue;
 use fluvio_smartmodule::{smartmodule, RecordData, Result};
-use fluvio_smartmodule::extract::prelude::*;
+use fluvio_smartmodule::extract::*;
 
 #[smartmodule(map)]
 pub fn map(
