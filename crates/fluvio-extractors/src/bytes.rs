@@ -1,27 +1,18 @@
-use fluvio_dataplane_protocol::record::RecordData;
 use crate::FromBytes;
 
-pub struct Slice<'a>(pub &'a [u8]);
-
-impl<'a> FromBytes<'a> for Slice<'a> {
+impl<'a> FromBytes<'a> for &'a [u8] {
     type Error = std::convert::Infallible;
     type Inner = &'a [u8];
 
     fn inner(&self) -> &Self::Inner {
-        &self.0
+        self
     }
 
     fn into_inner(self) -> Self::Inner {
-        self.0
+        self
     }
 
     fn from_bytes(bytes: &'a [u8]) -> Result<Self, Self::Error> {
-        Ok(Slice(bytes))
-    }
-}
-
-impl From<Slice<'_>> for RecordData {
-    fn from(slice: Slice) -> Self {
-        RecordData::from(slice.0)
+        Ok(bytes)
     }
 }
