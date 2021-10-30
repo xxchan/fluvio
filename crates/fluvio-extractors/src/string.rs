@@ -1,6 +1,7 @@
 use std::io::{Error as IoError, ErrorKind};
 use std::str::{from_utf8, FromStr};
 use std::string::FromUtf8Error;
+use bytes::Bytes;
 use crate::FromBytes;
 
 pub struct Parse<T>(pub T);
@@ -20,8 +21,9 @@ where
         self.0
     }
 
-    fn from_bytes(bytes: &'a [u8]) -> Result<Self, Self::Error> {
-        let string = from_utf8(bytes).map_err(|e| IoError::new(ErrorKind::InvalidData, e))?;
+    fn from_bytes(bytes: &'a Bytes) -> Result<Self, Self::Error> {
+        let string =
+            from_utf8(bytes.as_ref()).map_err(|e| IoError::new(ErrorKind::InvalidData, e))?;
         let it = T::from_str(string).map_err(|e| IoError::new(ErrorKind::InvalidData, e))?;
         Ok(Self(it))
     }
@@ -39,7 +41,7 @@ impl<'a> FromBytes<'a> for String {
         self
     }
 
-    fn from_bytes(bytes: &'a [u8]) -> Result<Self, Self::Error> {
+    fn from_bytes(bytes: &'a Bytes) -> Result<Self, Self::Error> {
         let string = String::from_utf8(bytes.to_vec())?;
         Ok(string)
     }

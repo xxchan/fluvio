@@ -1752,6 +1752,7 @@ dependencies = [
 name = "fluvio-extractors"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "eyre",
  "fluvio-dataplane-protocol",
  "serde",

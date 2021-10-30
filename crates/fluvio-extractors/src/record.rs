@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use fluvio_dataplane_protocol::record::Record as FluvioRecord;
 use crate::traits::{FromBytes, FromRecord};
 
@@ -22,10 +23,10 @@ impl<'a, K: FromBytes<'a>, V: FromBytes<'a>> FromRecord<'a> for Record<K, V> {
         let key = record
             .key
             .as_ref()
-            .map(|k| K::from_bytes(k.as_ref()))
+            .map(|k| K::from_bytes(k.inner()))
             .transpose()
             .map_err(RecordError::Key)?;
-        let value = V::from_bytes(record.value.as_ref()).map_err(RecordError::Value)?;
+        let value = V::from_bytes(&record.value.inner()).map_err(RecordError::Value)?;
         Ok(Record { key, value })
     }
 }
@@ -66,7 +67,7 @@ impl<'a, K: FromBytes<'a>> FromRecord<'a> for Key<K> {
         let key = record
             .key
             .as_ref()
-            .map(|k| K::from_bytes(k.as_ref()))
+            .map(|k| K::from_bytes(k.inner()))
             .transpose()?;
         Ok(Self(key))
     }
@@ -85,7 +86,7 @@ impl<'a, V: FromBytes<'a>> FromRecord<'a> for Value<V> {
     type Error = <V as FromBytes<'a>>::Error;
 
     fn from_record(record: &'a FluvioRecord) -> Result<Self, Self::Error> {
-        let value = V::from_bytes(record.value.as_ref())?;
+        let value = V::from_bytes(record.value.inner())?;
         Ok(Self(value))
     }
 }
@@ -108,7 +109,7 @@ impl<'a, V: FromBytes<'a>> FromBytes<'a> for Value<V> {
         self.0.into_inner()
     }
 
-    fn from_bytes(bytes: &'a [u8]) -> Result<Self, Self::Error> {
+    fn from_bytes(bytes: &'a Bytes) -> Result<Self, Self::Error> {
         Ok(Self(V::from_bytes(bytes)?))
     }
 }

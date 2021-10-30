@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use serde::{Serialize, Deserialize};
 use crate::traits::FromBytes;
 
@@ -16,8 +17,8 @@ impl<'a, T: Deserialize<'a>> FromBytes<'a> for Json<T> {
         self.0
     }
 
-    fn from_bytes(bytes: &'a [u8]) -> Result<Self, Self::Error> {
-        let inner: T = serde_json::from_slice(bytes)?;
+    fn from_bytes(bytes: &'a Bytes) -> Result<Self, Self::Error> {
+        let inner: T = serde_json::from_slice(bytes.as_ref())?;
         Ok(Self(inner))
     }
 }

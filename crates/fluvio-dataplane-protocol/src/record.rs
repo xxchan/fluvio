@@ -110,8 +110,8 @@ impl RecordData {
         std::str::from_utf8(self.as_ref())
     }
 
-    pub fn inner(&self) -> Bytes {
-        self.0.clone()
+    pub fn inner(&self) -> &Bytes {
+        &self.0
     }
 }
 

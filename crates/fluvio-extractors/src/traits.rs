@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use std::error::Error as StdError;
 use fluvio_dataplane_protocol::record::Record;
 
@@ -13,7 +14,7 @@ pub trait FromBytes<'a>: Sized {
 
     fn inner(&self) -> &Self::Inner;
     fn into_inner(self) -> Self::Inner;
-    fn from_bytes(bytes: &'a [u8]) -> Result<Self, Self::Error>;
+    fn from_bytes(bytes: &'a Bytes) -> Result<Self, Self::Error>;
 }
 
 impl<'a> FromRecord<'a> for &'a Record {
