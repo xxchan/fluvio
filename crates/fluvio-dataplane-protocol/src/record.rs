@@ -113,6 +113,10 @@ impl RecordData {
     pub fn inner(&self) -> &Bytes {
         &self.0
     }
+
+    pub fn from_bytes(bytes: &Bytes) -> Self {
+        Self(bytes.clone())
+    }
 }
 
 impl<V: Into<Vec<u8>>> From<V> for RecordData {
