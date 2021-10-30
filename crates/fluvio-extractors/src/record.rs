@@ -92,6 +92,10 @@ impl<'a, V: FromBytes<'a>> FromRecord<'a> for Value<V> {
 }
 
 impl<'a, V: FromBytes<'a>> Value<V> {
+    pub fn inner(&self) -> &V::Inner {
+        self.0.inner()
+    }
+
     pub fn into_inner(self) -> V::Inner {
         self.0.into_inner()
     }
