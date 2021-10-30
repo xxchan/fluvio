@@ -43,7 +43,7 @@ pub fn generate_map_smartmodule(func: &SmartModuleFn, has_params: bool) -> Token
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
-                use fluvio_smartmodule::extractors::FromRecord;
+                use fluvio_smartmodule::extract::FromRecord;
                 use fluvio_smartmodule::Error;
 
                 // DECODING

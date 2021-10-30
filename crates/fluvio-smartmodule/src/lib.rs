@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 
-pub use fluvio_extractors as extractors;
+pub use fluvio_extractors as extract;
 pub use fluvio_dataplane_protocol as dataplane;
 pub use dataplane::record::{Record, RecordData};
 

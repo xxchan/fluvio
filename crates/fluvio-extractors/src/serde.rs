@@ -6,6 +6,15 @@ pub struct Json<T>(pub T);
 
 impl<'a, T: Deserialize<'a>> FromBytes<'a> for Json<T> {
     type Error = serde_json::Error;
+    type Inner = T;
+
+    fn inner(&self) -> &Self::Inner {
+        &self.0
+    }
+
+    fn into_inner(self) -> Self::Inner {
+        self.0
+    }
 
     fn from_bytes(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         let inner: T = serde_json::from_slice(bytes)?;

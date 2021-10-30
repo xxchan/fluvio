@@ -9,6 +9,15 @@ where
     <T as FromStr>::Err: std::error::Error + Send + Sync + 'static,
 {
     type Error = IoError;
+    type Inner = T;
+
+    fn inner(&self) -> &Self::Inner {
+        &self.0
+    }
+
+    fn into_inner(self) -> Self::Inner {
+        self.0
+    }
 
     fn from_bytes(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         let string = from_utf8(bytes).map_err(|e| IoError::new(ErrorKind::InvalidData, e))?;

@@ -46,8 +46,8 @@
 //! ```
 
 use fluvio_smartmodule::{smartmodule, Result};
-use fluvio_smartmodule::extractors::Value;
-use fluvio_smartmodule::extractors::serde::Json;
+use fluvio_smartmodule::extract::Value;
+use fluvio_smartmodule::extract::serde::Json;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -66,6 +66,7 @@ struct StructuredLog {
 }
 
 #[smartmodule(filter)]
-fn filter_log_level(Value(Json(log)): Value<Json<StructuredLog>>) -> Result<bool> {
+fn filter_log_level(value: Value<Json<StructuredLog>>) -> Result<bool> {
+    let log = value.into_inner();
     Ok(log.level > LogLevel::Debug)
 }

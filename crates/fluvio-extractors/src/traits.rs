@@ -9,7 +9,10 @@ pub trait FromRecord<'a>: Sized {
 
 pub trait FromBytes<'a>: Sized {
     type Error: StdError + Send + Sync + 'static;
+    type Inner;
 
+    fn inner(&self) -> &Self::Inner;
+    fn into_inner(self) -> Self::Inner;
     fn from_bytes(bytes: &'a [u8]) -> Result<Self, Self::Error>;
 }
 
