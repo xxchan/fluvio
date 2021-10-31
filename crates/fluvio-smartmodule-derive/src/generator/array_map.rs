@@ -22,11 +22,11 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn, has_params: bool) ->
 
     let function_call = if has_params {
         quote!(
-            super:: #user_fn(&record, &params)
+            super:: #user_fn(arg, &params)
         )
     } else {
         quote!(
-            super:: #user_fn(&record)
+            super:: #user_fn(arg)
         )
     };
 
@@ -43,6 +43,8 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn, has_params: bool) ->
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData, RecordKey};
+                use fluvio_smartmodule::extract::FromRecord;
+                use fluvio_smartmodule::Error;
 
                 // DECODING
                 extern "C" {
@@ -71,6 +73,20 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn, has_params: bool) ->
                 };
 
                 for record in records.into_iter() {
+                    let arg = match FromRecord::from_record(&record) {
+                        Ok(inner) => inner,
+                        Err(err) => {
+                            let error = SmartModuleRuntimeError::new(
+                                &record,
+                                smartmodule_input.base_offset,
+                                SmartModuleKind::ArrayMap,
+                                Error::from(err),
+                            );
+                            output.error = Some(error);
+                            continue;
+                        }
+                    };
+
                     let result = #function_call;
                     match result {
                         Ok(output_records) => {

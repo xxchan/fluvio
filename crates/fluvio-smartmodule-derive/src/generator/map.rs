@@ -78,7 +78,7 @@ pub fn generate_map_smartmodule(func: &SmartModuleFn, has_params: bool) -> Token
                             let error = SmartModuleRuntimeError::new(
                                 &record,
                                 smartmodule_input.base_offset,
-                                SmartModuleKind::Filter,
+                                SmartModuleKind::Map,
                                 Error::from(err),
                             );
                             output.error = Some(error);

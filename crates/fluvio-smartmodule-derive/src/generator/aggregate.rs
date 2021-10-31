@@ -22,11 +22,11 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) ->
 
     let function_call = if has_params {
         quote!(
-            super:: #user_fn(acc_data, &record, &params)
+            super:: #user_fn(acc_data, arg, &params)
         )
     } else {
         quote!(
-            super:: #user_fn(acc_data, &record)
+            super:: #user_fn(acc_data, arg)
         )
     };
 
@@ -41,8 +41,10 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) ->
                     SmartModuleAggregateInput, SmartModuleInternalError,
                     SmartModuleRuntimeError, SmartModuleKind, SmartModuleOutput,SmartModuleAggregateOutput
                 };
-                use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
+                use fluvio_smartmodule::dataplane::core::{Encoder, Decoder, bytes::Bytes};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
+                use fluvio_smartmodule::extract::{FromRecord, FromBytes};
+                use fluvio_smartmodule::Error;
 
                 extern "C" {
                     fn copy_records(putr: i32, len: i32);
@@ -75,9 +77,36 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) ->
                 };
 
                 for mut record in records.into_iter() {
-                    let acc_data = RecordData::from(accumulator);
-                    let result = #function_call;
+                    let acc_bytes = Bytes::copy_from_slice(&accumulator);
+                    let acc_data = match FromBytes::from_bytes(&acc_bytes) {
+                        Ok(inner) => inner,
+                        Err(err) => {
+                            let error = SmartModuleRuntimeError::new(
+                                &record,
+                                smartmodule_input.base.base_offset.clone(),
+                                SmartModuleKind::Aggregate,
+                                Error::from(err),
+                            );
+                            output.base.error = Some(error);
+                            continue;
+                        }
+                    };
 
+                    let arg = match FromRecord::from_record(&record) {
+                        Ok(inner) => inner,
+                        Err(err) => {
+                            let error = SmartModuleRuntimeError::new(
+                                &record,
+                                smartmodule_input.base.base_offset.clone(),
+                                SmartModuleKind::Aggregate,
+                                Error::from(err),
+                            );
+                            output.base.error = Some(error);
+                            continue;
+                        }
+                    };
+
+                    let result = #function_call;
                     match result {
                         Ok(value) => {
                             accumulator = Vec::from(value.as_ref());
