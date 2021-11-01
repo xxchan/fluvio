@@ -1,5 +1,5 @@
 use std::io::{Error as IoError, ErrorKind};
-use std::str::{from_utf8, FromStr};
+use std::str::{from_utf8, FromStr, Utf8Error};
 use std::string::FromUtf8Error;
 use bytes::Bytes;
 use crate::FromBytes;
@@ -43,6 +43,24 @@ impl<'a> FromBytes<'a> for String {
 
     fn from_bytes(bytes: &'a Bytes) -> Result<Self, Self::Error> {
         let string = String::from_utf8(bytes.to_vec())?;
+        Ok(string)
+    }
+}
+
+impl<'a> FromBytes<'a> for &'a str {
+    type Error = Utf8Error;
+    type Inner = &'a str;
+
+    fn inner(&self) -> &Self::Inner {
+        self
+    }
+
+    fn into_inner(self) -> Self::Inner {
+        self
+    }
+
+    fn from_bytes(bytes: &'a Bytes) -> Result<Self, Self::Error> {
+        let string = std::str::from_utf8(bytes.as_ref())?;
         Ok(string)
     }
 }
