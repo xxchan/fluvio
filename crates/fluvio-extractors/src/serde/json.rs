@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use serde::{Serialize, Deserialize};
-use crate::traits::{FromBytes, IntoBytes};
+use crate::{FromBytes, IntoBytes};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Json<T>(pub T);

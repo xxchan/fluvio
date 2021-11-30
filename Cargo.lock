@@ -1757,7 +1757,9 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "serde",
  "serde_json",
+ "serde_yaml",
  "thiserror",
+ "toml",
 ]
 
 [[package]]
