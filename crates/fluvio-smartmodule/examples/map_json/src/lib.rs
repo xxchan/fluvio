@@ -1,6 +1,5 @@
 use serde_json::Value as SerdeValue;
-use fluvio_smartmodule::{smartmodule, Result};
-use fluvio_smartmodule::extract::*;
+use fluvio_smartmodule::prelude::*;
 
 #[smartmodule(map)]
 pub fn map(record: Value<Json<SerdeValue>>) -> Result<Value<Yaml<SerdeValue>>> {

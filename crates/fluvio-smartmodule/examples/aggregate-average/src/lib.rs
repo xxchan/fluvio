@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
-use fluvio_smartmodule::{smartmodule, Result, RecordData};
-use fluvio_smartmodule::extract::*;
+use fluvio_smartmodule::prelude::*;
+use fluvio_smartmodule::RecordData;
 
 #[derive(Default, Serialize, Deserialize)]
 struct IncrementalAverage {

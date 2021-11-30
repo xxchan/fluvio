@@ -1,4 +1,5 @@
-use fluvio_smartmodule::{smartmodule, Result, RecordData, extract::*};
+use fluvio_smartmodule::prelude::*;
+use fluvio_smartmodule::RecordData;
 
 #[smartmodule(aggregate)]
 pub fn aggregate(acc: &[u8], current: Value<Parse<i32>>) -> Result<RecordData> {

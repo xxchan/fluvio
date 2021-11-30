@@ -1,5 +1,4 @@
-use fluvio_smartmodule::{smartmodule, SmartOpt, Result};
-use fluvio_smartmodule::extract::*;
+use fluvio_smartmodule::prelude::*;
 
 #[derive(SmartOpt)]
 pub struct FilterOpt {

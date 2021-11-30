@@ -1,5 +1,5 @@
-use fluvio_smartmodule::{smartmodule, Result, RecordData};
-use fluvio_smartmodule::extract::*;
+use fluvio_smartmodule::prelude::*;
+use fluvio_smartmodule::RecordData;
 
 /// This aggegrate concanate accumulator and current value
 /// values: "a","b"

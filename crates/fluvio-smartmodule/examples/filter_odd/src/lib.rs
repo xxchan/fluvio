@@ -22,7 +22,8 @@
 //!           filter_odd/src/lib.rs:45:38
 //! ```
 
-use fluvio_smartmodule::{smartmodule, Record, Result};
+use fluvio_smartmodule::prelude::*;
+use fluvio_smartmodule::Record;
 
 #[derive(Debug, thiserror::Error)]
 pub enum SecondErrorWrapper {

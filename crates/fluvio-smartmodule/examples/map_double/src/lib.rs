@@ -1,5 +1,4 @@
-use fluvio_smartmodule::{smartmodule, Result};
-use fluvio_smartmodule::extract::*;
+use fluvio_smartmodule::prelude::*;
 
 #[smartmodule(map)]
 pub fn map(record: Value<Parse<i32>>) -> Result<Value<String>> {

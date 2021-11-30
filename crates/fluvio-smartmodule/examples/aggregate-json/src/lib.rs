@@ -1,6 +1,7 @@
 use std::collections::HashMap;
-use fluvio_smartmodule::{smartmodule, Result, RecordData, extract::*};
+use fluvio_smartmodule::prelude::*;
 use serde::{Serialize, Deserialize};
+use fluvio_smartmodule::RecordData;
 
 #[derive(Default, Serialize, Deserialize)]
 struct GithubStars(HashMap<String, u32>);

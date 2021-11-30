@@ -1,5 +1,4 @@
-use fluvio_smartmodule::{smartmodule, Result};
-use fluvio_smartmodule::extract::*;
+use fluvio_smartmodule::prelude::*;
 use regex::Regex;
 
 #[smartmodule(filter)]

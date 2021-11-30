@@ -34,7 +34,7 @@
 //! ```
 
 use serde_json::Value as SerdeValue;
-use fluvio_smartmodule::{smartmodule, Result, extract::*};
+use fluvio_smartmodule::prelude::*;
 
 #[smartmodule(array_map)]
 pub fn array_map(record: Value<Json<Vec<SerdeValue>>>) -> Result<Vec<Value<Json<SerdeValue>>>> {

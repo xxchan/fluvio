@@ -9,7 +9,14 @@ pub use fluvio_smartmodule_derive::{smartmodule, SmartOpt};
 pub const ENCODING_ERROR: i32 = -1;
 
 pub use eyre::Error;
-pub type Result<T> = eyre::Result<T>;
+pub type Result<T, E = eyre::Report> = eyre::Result<T, E>;
+
+pub mod prelude {
+    pub use crate::Result;
+    pub use crate::smartmodule;
+    pub use crate::SmartOpt;
+    pub use fluvio_extractors::*;
+}
 
 pub mod memory {
     /// Allocate memory into the module's linear memory
