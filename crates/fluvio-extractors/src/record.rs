@@ -1,6 +1,6 @@
 use bytes::Bytes;
-use fluvio_dataplane_protocol::record::Record as FluvioRecord;
-use crate::traits::{FromBytes, FromRecord};
+use fluvio_dataplane_protocol::record::{Record as FluvioRecord, RecordData};
+use crate::traits::{FromBytes, FromRecord, IntoBytes, IntoRecord};
 
 #[derive(Debug)]
 pub struct Record<K, V> {
@@ -11,9 +11,13 @@ pub struct Record<K, V> {
 #[derive(thiserror::Error, Debug)]
 pub enum RecordError<K, V> {
     #[error("error deserializing key")]
-    Key(#[source] K),
+    DeserializeKey(#[source] K),
     #[error("error deserializing value")]
-    Value(#[source] V),
+    DeserializeValue(#[source] V),
+    #[error("error serializing key")]
+    SerializeKey(#[source] K),
+    #[error("error serializing value")]
+    SerializeValue(#[source] V),
 }
 
 impl<'a, K: FromBytes<'a>, V: FromBytes<'a>> FromRecord<'a> for Record<K, V> {
@@ -25,9 +29,34 @@ impl<'a, K: FromBytes<'a>, V: FromBytes<'a>> FromRecord<'a> for Record<K, V> {
             .as_ref()
             .map(|k| K::from_bytes(k.inner()))
             .transpose()
-            .map_err(RecordError::Key)?;
-        let value = V::from_bytes(&record.value.inner()).map_err(RecordError::Value)?;
+            .map_err(RecordError::DeserializeKey)?;
+        let value = V::from_bytes(&record.value.inner()).map_err(RecordError::DeserializeValue)?;
         Ok(Record { key, value })
+    }
+}
+
+impl<K: IntoBytes, V: IntoBytes> IntoRecord for Record<K, V> {
+    type Error = RecordError<<K as IntoBytes>::Error, <V as IntoBytes>::Error>;
+
+    fn into_record(self, record: &mut FluvioRecord) -> Result<(), Self::Error> {
+        let key = self
+            .key
+            .map(|k| k.into_bytes())
+            .transpose()
+            .map_err(RecordError::SerializeKey)?
+            .as_ref()
+            .map(RecordData::from_bytes);
+
+        let value_bytes = self
+            .value
+            .into_bytes()
+            .map_err(RecordError::SerializeValue)?;
+        let value = RecordData::from_bytes(&value_bytes);
+
+        // Merge this key and value into the existing record
+        record.key = key;
+        record.value = value;
+        Ok(())
     }
 }
 
@@ -73,6 +102,23 @@ impl<'a, K: FromBytes<'a>> FromRecord<'a> for Key<K> {
     }
 }
 
+impl<K: IntoBytes> IntoRecord for Key<K> {
+    type Error = <K as IntoBytes>::Error;
+
+    fn into_record(self, record: &mut FluvioRecord) -> Result<(), Self::Error> {
+        let key = self
+            .0
+            .map(|k| k.into_bytes())
+            .transpose()?
+            .as_ref()
+            .map(RecordData::from_bytes);
+
+        // Merge this key into the existing record
+        record.key = key;
+        Ok(())
+    }
+}
+
 impl<'a, K: FromBytes<'a>> Key<K> {
     pub fn into_inner(self) -> Option<K::Inner> {
         self.0.map(|k| k.into_inner())
@@ -88,6 +134,19 @@ impl<'a, V: FromBytes<'a>> FromRecord<'a> for Value<V> {
     fn from_record(record: &'a FluvioRecord) -> Result<Self, Self::Error> {
         let value = V::from_bytes(record.value.inner())?;
         Ok(Self(value))
+    }
+}
+
+impl<V: IntoBytes> IntoRecord for Value<V> {
+    type Error = <V as IntoBytes>::Error;
+
+    fn into_record(self, record: &mut FluvioRecord) -> Result<(), Self::Error> {
+        let bytes = self.0.into_bytes()?;
+        let value = RecordData::from_bytes(&bytes);
+
+        // Merge the new value into the existing record
+        record.value = value;
+        Ok(())
     }
 }
 

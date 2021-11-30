@@ -3,6 +3,7 @@ use std::str::{from_utf8, FromStr, Utf8Error};
 use std::string::FromUtf8Error;
 use bytes::Bytes;
 use crate::FromBytes;
+use crate::traits::IntoBytes;
 
 pub struct Parse<T>(pub T);
 
@@ -47,6 +48,14 @@ impl<'a> FromBytes<'a> for String {
     }
 }
 
+impl IntoBytes for String {
+    type Error = std::convert::Infallible;
+
+    fn into_bytes(self) -> Result<Bytes, Self::Error> {
+        Ok(Bytes::from(self))
+    }
+}
+
 impl<'a> FromBytes<'a> for &'a str {
     type Error = Utf8Error;
     type Inner = &'a str;
@@ -62,5 +71,13 @@ impl<'a> FromBytes<'a> for &'a str {
     fn from_bytes(bytes: &'a Bytes) -> Result<Self, Self::Error> {
         let string = std::str::from_utf8(bytes.as_ref())?;
         Ok(string)
+    }
+}
+
+impl<'a> IntoBytes for &'a str {
+    type Error = std::convert::Infallible;
+
+    fn into_bytes(self) -> Result<Bytes, Self::Error> {
+        Ok(Bytes::from(self.to_string()))
     }
 }

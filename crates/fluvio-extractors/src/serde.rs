@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use serde::{Serialize, Deserialize};
-use crate::traits::FromBytes;
+use crate::traits::{FromBytes, IntoBytes};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Json<T>(pub T);
@@ -20,6 +20,15 @@ impl<'a, T: Deserialize<'a>> FromBytes<'a> for Json<T> {
     fn from_bytes(bytes: &'a Bytes) -> Result<Self, Self::Error> {
         let inner: T = serde_json::from_slice(bytes.as_ref())?;
         Ok(Self(inner))
+    }
+}
+
+impl<T: Serialize> IntoBytes for Json<T> {
+    type Error = serde_json::Error;
+
+    fn into_bytes(self) -> Result<Bytes, Self::Error> {
+        let vec = serde_json::to_vec(&self)?;
+        Ok(Bytes::from(vec))
     }
 }
 

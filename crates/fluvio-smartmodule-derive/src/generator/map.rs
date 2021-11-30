@@ -43,7 +43,7 @@ pub fn generate_map_smartmodule(func: &SmartModuleFn, has_params: bool) -> Token
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
-                use fluvio_smartmodule::extract::FromRecord;
+                use fluvio_smartmodule::extract::{FromRecord, IntoRecord};
                 use fluvio_smartmodule::Error;
 
                 // DECODING
@@ -88,10 +88,22 @@ pub fn generate_map_smartmodule(func: &SmartModuleFn, has_params: bool) -> Token
 
                     let result = #function_call;
                     match result {
-                        Ok((maybe_key, value)) => {
-                            record.key = maybe_key;
-                            record.value = value;
-                            output.successes.push(record);
+                        Ok(convert_to_record) => {
+                            let result = IntoRecord::into_record(convert_to_record, &mut record);
+                            match result {
+                                Ok(_) => {
+                                    output.successes.push(record);
+                                }
+                                Err(e) => {
+                                    let error = SmartModuleRuntimeError::new(
+                                        &record,
+                                        smartmodule_input.base_offset,
+                                        SmartModuleKind::Map,
+                                        Error::from(e),
+                                    );
+                                    output.error = Some(error);
+                                }
+                            }
                         }
                         Err(err) => {
                             let error = SmartModuleRuntimeError::new(

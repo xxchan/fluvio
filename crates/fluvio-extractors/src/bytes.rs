@@ -1,6 +1,9 @@
 use bytes::Bytes;
 use fluvio_dataplane_protocol::record::RecordData;
 use crate::FromBytes;
+use crate::traits::IntoBytes;
+
+// impl FromBytes //////////////////////////////////////////////////////////////
 
 impl<'a> FromBytes<'a> for Bytes {
     type Error = std::convert::Infallible;
@@ -67,5 +70,31 @@ impl<'a> FromBytes<'a> for RecordData {
 
     fn from_bytes(bytes: &'a Bytes) -> Result<Self, Self::Error> {
         Ok(RecordData::from_bytes(bytes))
+    }
+}
+
+// impl IntoBytes //////////////////////////////////////////////////////////////
+
+impl IntoBytes for Bytes {
+    type Error = std::convert::Infallible;
+
+    fn into_bytes(self) -> Result<Bytes, Self::Error> {
+        Ok(self)
+    }
+}
+
+impl IntoBytes for Vec<u8> {
+    type Error = std::convert::Infallible;
+
+    fn into_bytes(self) -> Result<Bytes, Self::Error> {
+        Ok(Bytes::from(self))
+    }
+}
+
+impl<'a> IntoBytes for &'a [u8] {
+    type Error = std::convert::Infallible;
+
+    fn into_bytes(self) -> Result<Bytes, Self::Error> {
+        Vec::from(self).into_bytes()
     }
 }

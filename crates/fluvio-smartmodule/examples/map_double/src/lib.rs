@@ -1,8 +1,8 @@
-use fluvio_smartmodule::{smartmodule, Result, RecordData};
+use fluvio_smartmodule::{smartmodule, Result};
 use fluvio_smartmodule::extract::*;
 
 #[smartmodule(map)]
-pub fn map(record: Record<RecordData, Parse<i32>>) -> Result<(Option<RecordData>, RecordData)> {
-    let value = (record.value() * 2).to_string();
-    Ok((record.key, value.into()))
+pub fn map(record: Value<Parse<i32>>) -> Result<Value<String>> {
+    let value = (record.inner() * 2).to_string();
+    Ok(Value(value))
 }

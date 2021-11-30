@@ -1,8 +1,8 @@
-use fluvio_smartmodule::{smartmodule, RecordData, Result};
+use fluvio_smartmodule::{smartmodule, Result};
 use fluvio_smartmodule::extract::*;
 
 #[smartmodule(map)]
-pub fn map(record: Record<RecordData, String>) -> Result<(Option<RecordData>, RecordData)> {
-    let value = record.value.to_ascii_lowercase();
-    Ok((record.key, value.into()))
+pub fn map(record: Value<String>) -> Result<Value<String>> {
+    let value = record.inner().to_ascii_lowercase();
+    Ok(Value(value))
 }
