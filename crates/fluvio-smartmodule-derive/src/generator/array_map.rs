@@ -43,7 +43,7 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn, has_params: bool) ->
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData, RecordKey};
-                use fluvio_smartmodule::extract::FromRecord;
+                use fluvio_smartmodule::extract::{FromRecord, IntoRecord};
                 use fluvio_smartmodule::Error;
 
                 // DECODING
@@ -90,10 +90,23 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn, has_params: bool) ->
                     let result = #function_call;
                     match result {
                         Ok(output_records) => {
-                            for (output_key, output_value) in output_records {
-                                let key = RecordKey::from_option(output_key);
-                                let new_record = Record::new_key_value(key, output_value);
-                                output.successes.push(new_record);
+                            for convert_to_record in output_records {
+                                let mut new_record = record.clone();
+                                let result = IntoRecord::into_record(convert_to_record, &mut new_record);
+                                match result {
+                                    Ok(_) => {
+                                        output.successes.push(new_record);
+                                    }
+                                    Err(e) => {
+                                        let error = SmartModuleRuntimeError::new(
+                                            &record,
+                                            smartmodule_input.base_offset,
+                                            SmartModuleKind::ArrayMap,
+                                            Error::from(e),
+                                        );
+                                        output.error = Some(error);
+                                    }
+                                }
                             }
                         }
                         Err(err) => {

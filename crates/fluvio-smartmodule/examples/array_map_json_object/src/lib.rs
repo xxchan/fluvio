@@ -51,29 +51,23 @@
 //! [c] "Cranberry"
 //! ```
 
-use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
-use serde_json::{Map, Value};
+use fluvio_smartmodule::{smartmodule, Result, extract::*};
+use serde_json::{Map, Value as SerdeValue};
 
 #[smartmodule(array_map)]
-pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {
-    // Deserialize a JSON object (Map) with any kind of values inside
-    let object: Map<String, Value> = serde_json::from_slice(record.value.as_ref())?;
-
-    // Convert each JSON value from the array back into a JSON string
-    let key_value_strings: Vec<(&String, String)> = object
-        .iter()
-        .map(|(key, value)| serde_json::to_string(value).map(|value| (key, value)))
-        .collect::<core::result::Result<_, _>>()?;
-
-    // Create one record from each JSON string to send
-    let key_value_records: Vec<(Option<RecordData>, RecordData)> = key_value_strings
-        .into_iter()
-        .map(|(key, value)| {
-            (
-                Some(RecordData::from(key.to_string())),
-                RecordData::from(value),
-            )
+pub fn array_map(
+    record: Value<Json<Map<String, SerdeValue>>>,
+) -> Result<Vec<Record<String, Json<SerdeValue>>>> {
+    let output_records = record
+        .into_inner() // Map<String, Value>
+        .into_iter() // impl Iterator<Item = (String, Value)>
+        // For every key-value pair in the JSON object, create a Record
+        // whose key is the JSON key and whose value is that key's value
+        .map(|(key, value): (String, SerdeValue)| Record {
+            key: Some(key),
+            value: Json(value),
         })
         .collect();
-    Ok(key_value_records)
+
+    Ok(output_records)
 }

@@ -33,23 +33,15 @@
 //! "Cranberry"
 //! ```
 
-use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
+use serde_json::Value as SerdeValue;
+use fluvio_smartmodule::{smartmodule, Result, extract::*};
 
 #[smartmodule(array_map)]
-pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {
-    // Deserialize a JSON array with any kind of values inside
-    let array: Vec<serde_json::Value> = serde_json::from_slice(record.value.as_ref())?;
-
-    // Convert each JSON value from the array back into a JSON string
-    let strings: Vec<String> = array
+pub fn array_map(record: Value<Json<Vec<SerdeValue>>>) -> Result<Vec<Value<Json<SerdeValue>>>> {
+    let values = record
+        .into_inner()
         .into_iter()
-        .map(|value| serde_json::to_string(&value))
-        .collect::<core::result::Result<_, _>>()?;
-
-    // Create one record from each JSON string to send
-    let records: Vec<(Option<RecordData>, RecordData)> = strings
-        .into_iter()
-        .map(|s| (None, RecordData::from(s)))
+        .map(|v| Value(Json(v)))
         .collect();
-    Ok(records)
+    Ok(values)
 }
