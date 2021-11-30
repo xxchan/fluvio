@@ -73,6 +73,14 @@ impl<'a> FromBytes<'a> for RecordData {
     }
 }
 
+impl IntoBytes for RecordData {
+    type Error = std::convert::Infallible;
+
+    fn into_bytes(self) -> Result<Bytes, Self::Error> {
+        Ok(self.inner().clone())
+    }
+}
+
 // impl IntoBytes //////////////////////////////////////////////////////////////
 
 impl IntoBytes for Bytes {

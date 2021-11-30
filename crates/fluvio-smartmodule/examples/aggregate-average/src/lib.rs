@@ -1,6 +1,5 @@
 use serde::{Serialize, Deserialize};
 use fluvio_smartmodule::prelude::*;
-use fluvio_smartmodule::RecordData;
 
 #[derive(Default, Serialize, Deserialize)]
 struct IncrementalAverage {
@@ -23,11 +22,10 @@ impl IncrementalAverage {
 }
 
 #[smartmodule(aggregate)]
-pub fn aggregate(acc: &[u8], current: Value<Parse<f64>>) -> Result<RecordData> {
+fn aggregate(acc: &[u8], current: Value<Parse<f64>>) -> Result<Json<IncrementalAverage>> {
     // Parse the average from JSON
     let mut average: IncrementalAverage = serde_json::from_slice(acc).unwrap_or_default();
     average.add_value(current.into_inner());
 
-    let output = serde_json::to_vec_pretty(&average)?;
-    Ok(output.into())
+    Ok(Json(average))
 }

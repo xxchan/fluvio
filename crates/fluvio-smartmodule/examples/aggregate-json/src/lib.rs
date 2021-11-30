@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use fluvio_smartmodule::prelude::*;
 use serde::{Serialize, Deserialize};
-use fluvio_smartmodule::RecordData;
 
 #[derive(Default, Serialize, Deserialize)]
 struct GithubStars(HashMap<String, u32>);
@@ -21,13 +20,11 @@ impl std::ops::Add for GithubStars {
 }
 
 #[smartmodule(aggregate)]
-fn aggregate(acc: &[u8], current: Value<Json<GithubStars>>) -> Result<RecordData> {
+fn aggregate(acc: &[u8], current: Value<Json<GithubStars>>) -> Result<Json<GithubStars>> {
     // Parse accumulator
     let accumulated_stars: GithubStars = serde_json::from_slice(acc).unwrap_or_default();
 
     // Add stars and serialize
     let summed_stars = accumulated_stars + current.into_inner();
-    let summed_stars_bytes = serde_json::to_vec_pretty(&summed_stars)?;
-
-    Ok(summed_stars_bytes.into())
+    Ok(Json(summed_stars))
 }

@@ -1,15 +1,11 @@
 use fluvio_smartmodule::prelude::*;
-use fluvio_smartmodule::RecordData;
 
 #[smartmodule(aggregate)]
-pub fn aggregate(acc: &[u8], current: Value<Parse<i32>>) -> Result<RecordData> {
-    // Parse the accumulator as a string
-    let accumulator_string = std::str::from_utf8(acc)?;
-
-    // Parse the string into an integer
-    let accumulator_int = accumulator_string.trim().parse::<i32>().unwrap_or(0);
+pub fn aggregate(acc: &str, current: Value<Parse<i32>>) -> Result<String> {
+    // Parse the accumulator into an integer, or use default of 0
+    let accumulator_int = acc.trim().parse::<i32>().unwrap_or(0);
 
     // Take the sum of the two integers and return it as a string
     let sum = accumulator_int + current.into_inner();
-    Ok(sum.to_string().into())
+    Ok(sum.to_string())
 }

@@ -43,7 +43,7 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) ->
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder, bytes::Bytes};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
-                use fluvio_smartmodule::extract::{FromRecord, FromBytes};
+                use fluvio_smartmodule::extract::{FromRecord, FromBytes, IntoBytes};
                 use fluvio_smartmodule::Error;
 
                 extern "C" {
@@ -57,7 +57,7 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) ->
                     return SmartModuleInternalError::DecodingBaseInput as i32;
                 }
 
-                let mut accumulator = smartmodule_input.accumulator;
+                let mut accumulator = Bytes::copy_from_slice(&smartmodule_input.accumulator);
 
                 #params_parsing
 
@@ -77,8 +77,7 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) ->
                 };
 
                 for mut record in records.into_iter() {
-                    let acc_bytes = Bytes::copy_from_slice(&accumulator);
-                    let acc_data = match FromBytes::from_bytes(&acc_bytes) {
+                    let acc_data = match FromBytes::from_bytes(&accumulator) {
                         Ok(inner) => inner,
                         Err(err) => {
                             let error = SmartModuleRuntimeError::new(
@@ -108,11 +107,25 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) ->
 
                     let result = #function_call;
                     match result {
-                        Ok(value) => {
-                            accumulator = Vec::from(value.as_ref());
-                            output.accumulator = accumulator.clone();
-                            record.value = RecordData::from(accumulator.clone());
-                            output.base.successes.push(record);
+                        Ok(convert_to_bytes) => {
+                            let result = IntoBytes::into_bytes(convert_to_bytes);
+                            match result {
+                                Ok(bytes) => {
+                                    accumulator = bytes;
+                                    output.accumulator = accumulator.to_vec();
+                                    record.value = RecordData::from_bytes(&accumulator);
+                                    output.base.successes.push(record);
+                                }
+                                Err(e) => {
+                                    let error = SmartModuleRuntimeError::new(
+                                        &record,
+                                        smartmodule_input.base.base_offset,
+                                        SmartModuleKind::Aggregate,
+                                        Error::from(e),
+                                    );
+                                    output.base.error = Some(error);
+                                }
+                            }
                         }
                         Err(err) => {
                             let error = SmartModuleRuntimeError::new(
