@@ -19,12 +19,12 @@ If we wanted to write a SmartModule to extract just the `star_rating`
 values, we could use Fluvio extractors to pull out the JSON values we want, like so:
 
 ```rust
-use fluvio_smartmodule::{smartmodule, Result};
-use fluvio_smartmodule::extract::*;
+use fluvio_smartmodule::prelude::*;
+use serde_json::Value as SerdeValue;
 
 #[smartmodule(map)]
-fn map(record: Value<Json<serde_json::Value>>) -> Result<Value<Json<serde_json::Value>>> {
-    let value = record.into_inner();
+fn map(record: Value<Json<SerdeValue>>) -> Result<Value<Json<SerdeValue>>> {
+    let value: SerdeValue = record.into_inner();
     let star_rating = value["star_rating"].to_owned();
     Ok(Value(Json(star_rating)))
 }
@@ -41,8 +41,7 @@ SmartModule would look like this:
 
 ```rust
 use serde::{Serialize, Deserialize};
-use fluvio_smartmodule::{smartmodule, Result};
-use fluvio_smartmodule::extract::*;
+use fluvio_smartmodule::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Review {
