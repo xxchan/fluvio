@@ -76,7 +76,8 @@ jobs:
 
 
   longevity:
-    name: Hourly Longevity test 
+    name: Hourly Longevity test
+    if: ${{ false }} 
     runs-on: ${{ matrix.os }}
  #   needs:
  #    - build_long_binaries
