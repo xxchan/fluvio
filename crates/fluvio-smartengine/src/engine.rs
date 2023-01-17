@@ -1,4 +1,3 @@
-use std::cmp::max;
 use std::fmt::{self, Debug};
 
 use anyhow::Result;
@@ -25,7 +24,10 @@ pub struct SmartEngine(Engine);
 #[allow(clippy::new_without_default)]
 impl SmartEngine {
     pub fn new() -> Self {
-        Self(Engine::default())
+        let mut config = wasmtime::Config::default();
+        config.consume_fuel(true);
+
+        Self(Engine::new(&config).expect("Config is static"))
     }
 
     pub(crate) fn new_state(&self) -> WasmState {
