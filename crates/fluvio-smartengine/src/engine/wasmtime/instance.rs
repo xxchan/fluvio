@@ -1,90 +1,93 @@
-use std::any::Any;
 use std::sync::{Arc, Mutex};
-use std::fmt::{self, Debug};
 
-use tracing::{debug};
-use anyhow::{Error, Result};
-use wasmtime::{Memory, Module, Caller, Extern, Instance, Func, AsContextMut, AsContext};
+use anyhow::Result;
+use fluvio_protocol::{Decoder, Encoder};
+use tracing::debug;
+use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
+use wasmtime::{AsContext, Caller, Extern, Instance, Module, Memory};
 
-use fluvio_protocol::{Encoder, Decoder};
-
-use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInitInput,
+use crate::engine::{
+    common::{WasmFn, WasmInstance},
+    error::EngineError,
 };
-
-use super::error::EngineError;
-use super::init::SmartModuleInit;
-use super::{WasmSlice, memory};
 use super::state::WasmState;
 
-pub(crate) struct SmartModuleInstance {
-    ctx: SmartModuleInstanceContext,
-    init: Option<SmartModuleInit>,
-    transform: Box<dyn DowncastableTransform>,
-}
-
-impl SmartModuleInstance {
-    #[cfg(test)]
-    #[allow(clippy::borrowed_box)]
-    pub(crate) fn transform(&self) -> &Box<dyn DowncastableTransform> {
-        &self.transform
-    }
-
-    #[cfg(test)]
-    pub(crate) fn get_init(&self) -> &Option<SmartModuleInit> {
-        &self.init
-    }
-
-    pub(crate) fn new(
-        ctx: SmartModuleInstanceContext,
-        init: Option<SmartModuleInit>,
-        transform: Box<dyn DowncastableTransform>,
-    ) -> Self {
-        Self {
-            ctx,
-            init,
-            transform,
-        }
-    }
-
-    pub(crate) fn process(
-        &mut self,
-        input: SmartModuleInput,
-        store: &mut WasmState,
-    ) -> Result<SmartModuleOutput> {
-        self.transform.process(input, &mut self.ctx, store)
-    }
-
-    // TODO: Move this to SPU
-
-    pub fn init(&mut self, store: &mut impl AsContextMut) -> Result<(), Error> {
-        if let Some(init) = &mut self.init {
-            let input = SmartModuleInitInput {
-                params: self.ctx.params.clone(),
-            };
-            init.initialize(input, &mut self.ctx, store)
-        } else {
-            Ok(())
-        }
-    }
-}
-
-pub(crate) struct SmartModuleInstanceContext {
+pub struct WasmtimeInstance {
     instance: Instance,
     records_cb: Arc<RecordsCallBack>,
     params: SmartModuleExtraParams,
     version: i16,
 }
+pub struct WasmtimeContext {
+    pub state: WasmState,
+}
 
-impl Debug for SmartModuleInstanceContext {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SmartModuleInstanceBase")
+pub type WasmtimeFn = wasmtime::TypedFunc<(i32, i32, i32), i32>;
+
+impl WasmInstance for WasmtimeInstance {
+    type Context = WasmtimeContext;
+
+    type Func = WasmtimeFn;
+
+    fn get_fn(&self, name: &str, ctx: &mut Self::Context) -> Result<Option<Self::Func>> {
+        match self.instance.get_func(&mut ctx.state.0, name) {
+            Some(func) => {
+                // check type signature
+                func.typed(&mut ctx.state)
+                    .or_else(|_| func.typed(&ctx.state))
+                    .map(Some)
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn write_input<E: Encoder>(
+        &mut self,
+        input: &E,
+        ctx: &mut Self::Context,
+    ) -> anyhow::Result<(i32, i32, i32)> {
+        self.records_cb.clear();
+        let mut input_data = Vec::new();
+        input.encode(&mut input_data, self.version)?;
+        debug!(
+            len = input_data.len(),
+            version = self.version,
+            "input encoded"
+        );
+        let array_ptr = crate::engine::wasmtime::memory::copy_memory_to_instance(
+            &mut ctx.state,
+            &self.instance,
+            &input_data,
+        )?;
+        let length = input_data.len();
+        Ok((array_ptr as i32, length as i32, self.version as i32))
+    }
+
+    fn read_output<D: Decoder + Default>(&mut self, ctx: &mut Self::Context) -> Result<D> {
+        let bytes = self
+            .records_cb
+            .get()
+            .and_then(|m| m.copy_memory_from(&ctx.state).ok())
+            .unwrap_or_default();
+        let mut output = D::default();
+        output.decode(&mut std::io::Cursor::new(bytes), self.version)?;
+        Ok(output)
+    }
+
+    fn params(&self) -> SmartModuleExtraParams {
+        self.params.clone()
     }
 }
 
-impl SmartModuleInstanceContext {
-    /// instantiate new module instance that contain context
-    #[tracing::instrument(skip(state, module, params))]
+impl WasmFn for WasmtimeFn {
+    type Context = WasmtimeContext;
+
+    fn call(&self, ptr: i32, len: i32, version: i32, ctx: &mut Self::Context) -> Result<i32> {
+        WasmtimeFn::call(self, &mut ctx.state, (ptr, len, version))
+    }
+}
+
+impl WasmtimeInstance {
     pub(crate) fn instantiate(
         state: &mut WasmState,
         module: Module,
@@ -117,64 +120,6 @@ impl SmartModuleInstanceContext {
             params,
             version,
         })
-    }
-
-    /// get wasm function from instance
-    pub(crate) fn get_wasm_func(&self, store: &mut impl AsContextMut, name: &str) -> Option<Func> {
-        self.instance.get_func(store, name)
-    }
-
-    pub(crate) fn write_input<E: Encoder>(
-        &mut self,
-        input: &E,
-        store: &mut impl AsContextMut,
-    ) -> Result<WasmSlice> {
-        self.records_cb.clear();
-        let mut input_data = Vec::new();
-        input.encode(&mut input_data, self.version)?;
-        debug!(
-            len = input_data.len(),
-            version = self.version,
-            "input encoded"
-        );
-        let array_ptr = memory::copy_memory_to_instance(store, &self.instance, &input_data)?;
-        let length = input_data.len();
-        Ok((array_ptr as i32, length as i32, self.version as u32))
-    }
-
-    pub(crate) fn read_output<D: Decoder + Default>(&mut self, store: impl AsContext) -> Result<D> {
-        let bytes = self
-            .records_cb
-            .get()
-            .and_then(|m| m.copy_memory_from(store).ok())
-            .unwrap_or_default();
-        let mut output = D::default();
-        output.decode(&mut std::io::Cursor::new(bytes), self.version)?;
-        Ok(output)
-    }
-}
-
-pub(crate) trait SmartModuleTransform: Send + Sync {
-    /// transform records
-    fn process(
-        &mut self,
-        input: SmartModuleInput,
-        ctx: &mut SmartModuleInstanceContext,
-        store: &mut WasmState,
-    ) -> Result<SmartModuleOutput>;
-
-    /// return name of transform, this is used for identifying transform and debugging
-    fn name(&self) -> &str;
-}
-
-// In order turn to any, need following magic trick
-pub(crate) trait DowncastableTransform: SmartModuleTransform + Any {
-    fn as_any(&self) -> &dyn Any;
-}
-
-impl<T: SmartModuleTransform + Any> DowncastableTransform for T {
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 

@@ -17,12 +17,12 @@ wasi = ["wasmtime-wasi", "engine"]
 transformation = ["serde_json", "serde_yaml"]
 default = ["engine"]
 
-
 [dependencies]
 tracing ={ workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
-serde = { workspace = true,  features = ['derive'] }
+# std is needed for ser/de AtomicU64
+serde = { workspace = true,  features = ['derive', 'std'] }
 serde_json = { workspace = true, optional = true }
 serde_yaml = { workspace = true, default-features = false, optional = true }
 cfg-if = { workspace = true }
